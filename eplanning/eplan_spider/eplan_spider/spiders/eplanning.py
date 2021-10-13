@@ -1,6 +1,8 @@
 import scrapy
 from scrapy.http import Request, FormRequest
 import logging
+from eplan_spider.items import EplanSpiderItem
+from scrapy.loader import ItemLoader
 
 class EplanningSpider(scrapy.Spider):
     name = 'eplanning'
@@ -51,24 +53,12 @@ class EplanningSpider(scrapy.Spider):
 
     def parse_agent(self, response):
         agent = response.xpath("//*[@id='DivAgents']/table//tr")
-        if agent == []:
-            pass
-        else:
-            name = agent.xpath(".//td/text()")[0].get().strip()
-            address = agent.xpath(".//td/text()")[1:5].getall()
-            address = list(filter(lambda x: x.strip(), address))
+        l = ItemLoader(item=EplanSpiderItem(), selector=agent)
+        
+        l.add_xpath('name', './/th[contains(text(), "Name")]/following-sibling::td')
+        l.add_xpath('phone', './/th[contains(text(), "Phone")]/following-sibling::td')
+        l.add_xpath('fax', './/th[contains(text(), "Fax")]/following-sibling::td')
+        l.add_xpath('email', './/th[contains(text(), "e-mail")]/following-sibling::td/a/@href')
 
-            try:
-                phone = agent.xpath(".//th[contains(text(), 'Phone')]/following-sibling::td/text()").get().strip()
-                fax = agent.xpath(".//th[contains(text(), 'Fax')]/following-sibling::td/text()").get().strip()
-                email = agent.xpath(".//th[contains(text(), 'e-mail')]/following-sibling::td/text()").get().strip()
-            except:
-                phone = agent.xpath(".//th[contains(text(), 'Phone')]/following-sibling::td/text()").get()
-                fax = agent.xpath(".//th[contains(text(), 'Fax')]/following-sibling::td/text()").get()
-                email = agent.xpath(".//th[contains(text(), 'e-mail')]/following-sibling::td/text()").get()
 
-            yield {'name': name,
-                   'address': address,
-                   'phone': phone,
-                   'fax': fax,            
-                   'email': email}
+        yield l.load_item()
