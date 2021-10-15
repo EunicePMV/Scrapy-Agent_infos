@@ -52,13 +52,25 @@ class EplanningSpider(scrapy.Spider):
                           callback=self.parse_result)
 
     def parse_agent(self, response):
-        agent = response.xpath("//*[@id='DivAgents']/table//tr")
-        l = ItemLoader(item=EplanSpiderItem(), selector=agent)
-        
-        l.add_xpath('name', './/th[contains(text(), "Name")]/following-sibling::td')
-        l.add_xpath('phone', './/th[contains(text(), "Phone")]/following-sibling::td')
-        l.add_xpath('fax', './/th[contains(text(), "Fax")]/following-sibling::td')
-        l.add_xpath('email', './/th[contains(text(), "e-mail")]/following-sibling::td/a/@href')
+        agent = response.xpath("//*[@id='DivAgents']/table//tr/td/text()").get()
+        if agent == 'No Agent Associated with this Application':
+            logging.info('Agent not found.')
+        else:
+            agent = response.xpath("//*[@id='DivAgents']/table//tr")
+            l = ItemLoader(item=EplanSpiderItem(), selector=agent)
+            
+            l.add_xpath('name', './/th[contains(text(), "Name")]/following-sibling::td')
+            l.add_xpath('phone', './/th[contains(text(), "Phone")]/following-sibling::td')
+            l.add_xpath('fax', './/th[contains(text(), "Fax")]/following-sibling::td')
+            l.add_xpath('email', './/th[contains(text(), "e-mail")]/following-sibling::td/a/@href')
 
+            places = agent.xpath(".//td/text()")[1:5].getall()
+            string = ''
+            for place in places:
+                string += place
+                string += ' '
+            l.add_value('address', string)
 
-        yield l.load_item()
+            l.add_value('file_number', response.url[-7:-2])
+
+            yield l.load_item()

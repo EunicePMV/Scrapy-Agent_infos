@@ -20,7 +20,9 @@ def filter_email(value):
     return value.replace('mailto:', '')
 
 def filter_address(value):
-    value = list(filter(lambda x: x.strip(), value))
+    value = value.strip()
+    if value == '':
+        return None
     return value
 
 def filter_name(value):
@@ -32,4 +34,6 @@ class EplanSpiderItem(scrapy.Item):
     name = scrapy.Field(input_processor = MapCompose(remove_tags, filter_name), output_processor = TakeFirst())
     fax = scrapy.Field(input_processor = MapCompose(remove_tags, remove_empty), output_processor = TakeFirst())
     email = scrapy.Field(input_processor = MapCompose(remove_tags, filter_email), output_processor = TakeFirst())
+    address = scrapy.Field(input_processor = MapCompose(filter_address), output_processor = TakeFirst())
     phone = scrapy.Field(input_processor = MapCompose(remove_tags, remove_empty), output_processor = TakeFirst())
+    file_number = scrapy.Field(output_processor = TakeFirst())
